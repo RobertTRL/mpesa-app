@@ -3,16 +3,17 @@ import os
 import requests
 from datetime import datetime
 import base64
+import time
 
 load_dotenv()
 
-CONSUMER_KEY = os.getenv("SANDBOX_CONSUMER_KEY")
-CONSUMER_SECRET = os.getenv("SANDBOX_CONSUMER_SECRET")
-PASSKEY = os.getenv("SANDBOX_PASSKEY")
-CALLBACK_URL = os.getenv("SANDBOX_CALLBACK_URL")
-SHORTCODE = os.getenv("SANDBOX_SHORTCODE")
-BASE_URL = os.getenv("SANDBOX_BASE_URL")
-TEST_NUMBER = "254708374149"
+CONSUMER_KEY = os.getenv("PRODUCTION_CONSUMER_KEY")
+CONSUMER_SECRET = os.getenv("PRODUCTION_CONSUMER_SECRET")
+PASSKEY = os.getenv("PRODUCTION_PASSKEY")
+CALLBACK_URL = os.getenv("PRODUCTION_CALLBACK_URL")
+SHORTCODE = os.getenv("PRODUCTION_SHORTCODE")
+BASE_URL = os.getenv("PRODUCTION_BASE_URL")
+TEST_NUMBER = "254791154865"
 
 # ─── Step 2: Get an OAuth access token ────────────────────────────────────────
 # Daraja uses OAuth 2.0 Client Credentials. You encode your key and secret
@@ -66,7 +67,7 @@ stk_payload = {
     "Password":          password,
     "Timestamp":         timestamp,
     "TransactionType":   "CustomerPayBillOnline",
-    "Amount":            1,                  # KES 1 for testing
+    "Amount":            150000,                  # KES 1 for testing
     "PartyA":            TEST_NUMBER,         # who is paying
     "PartyB":            SHORTCODE,          # who is being paid (your shortcode)
     "PhoneNumber":       TEST_NUMBER,         # who gets the PIN prompt
