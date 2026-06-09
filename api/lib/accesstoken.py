@@ -8,7 +8,6 @@ def token_caching(func):
     """Caches the access token in Redis for 55 minutes."""
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
-
         try:
             cached_token = self.redis.get("mpesa_access_token")
             if cached_token:
@@ -39,7 +38,17 @@ class AccessToken:
         self.consumer_key = os.getenv("MPESA_CONSUMER_KEY")
         self.consumer_secret = os.getenv("MPESA_CONSUMER_SECRET")
         self.base_url = os.getenv("PRODUCTION_BASE_URL")
-    
+
+        missing = [k for k, v in {
+            "MPESA_CONSUMER_KEY":    self.consumer_key,
+            "MPESA_CONSUMER_SECRET": self.consumer_secret,
+            "MPESA_BASE_URL":        self.base_url,
+        }.items() if not v]
+
+        if missing:
+            raise EnvironmentError(f"Missing environment variables: {', '.join(missing)}")
+
+
     @token_caching
     def get_access_token(self):
         
@@ -48,7 +57,7 @@ class AccessToken:
         response = requests.get(token_url, headers={"Authorization": f"Basic {credentials}"}, timeout=30)
 
         response.raise_for_status()
-        
+
         token = response.json().get("access_token")
 
         if not token:
