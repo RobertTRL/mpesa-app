@@ -66,7 +66,7 @@ stk_payload = {
     "BusinessShortCode": SHORTCODE,
     "Password":          password,
     "Timestamp":         timestamp,
-    "TransactionType":   "CustomerPayBillOnline",
+    "TransactionType":   "CustomerBuyGoodsOnline",
     "Amount":            150000,                  # KES 1 for testing
     "PartyA":            TEST_NUMBER,         # who is paying
     "PartyB":            SHORTCODE,          # who is being paid (your shortcode)

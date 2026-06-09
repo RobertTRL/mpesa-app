@@ -3,6 +3,9 @@ import base64
 import os
 import functools
 from upstash_redis import Redis
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def token_caching(func):
     """Caches the access token in Redis for 55 minutes."""
@@ -35,14 +38,14 @@ class AccessToken:
             url=os.getenv("UPSTASH_REDIS_REST_URL"),
             token=os.getenv("UPSTASH_REDIS_REST_TOKEN")
         )
-        self.consumer_key = os.getenv("MPESA_CONSUMER_KEY")
-        self.consumer_secret = os.getenv("MPESA_CONSUMER_SECRET")
+        self.consumer_key = os.getenv("PRODUCTION_CONSUMER_KEY")
+        self.consumer_secret = os.getenv("PRODUCTION_CONSUMER_SECRET")
         self.base_url = os.getenv("PRODUCTION_BASE_URL")
 
         missing = [k for k, v in {
-            "MPESA_CONSUMER_KEY":    self.consumer_key,
-            "MPESA_CONSUMER_SECRET": self.consumer_secret,
-            "MPESA_BASE_URL":        self.base_url,
+            "PRODUCTION_CONSUMER_KEY":    self.consumer_key,
+            "PRODUCTION_CONSUMER_SECRET": self.consumer_secret,
+            "PRODUCTION_BASE_URL":        self.base_url,
         }.items() if not v]
 
         if missing:
