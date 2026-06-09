@@ -2,3 +2,4 @@ requests
 python-dotenv
 PyJWT
 bcrypt
+upstash-redis

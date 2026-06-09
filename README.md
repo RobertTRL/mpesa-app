@@ -23,21 +23,21 @@ mpesa-app/
 │   └── main.jsx
 │
 ├── api/                              ← Python serverless functions (Vercel)
-│   ├── auth/
-│   │   ├── login.py
-│   │   └── logout.py
-│   ├── pay.py
-│   ├── status.py
-│   └── callbacks/
-│       └── stk.py
+│      ├── lib/
+│      ├── auth.py        # get_access_token() shared function
+│      └── helpers.py     # shared response helpers
+│   ├── stkpush.py
+│   ├── callback.py
+│   ├── c2b/
+│          ├── register.py
+│          ├── validate.py
+│          └── confirm.py
+│   ├── b2c.py
+│   ├── b2b.py
+│   ├── balance.py
+│   ├── reversal.py
+│   └── status.py 
 │
-├── lib/                              ← reusable Python logic
-│   ├── mpesa/
-│   │   ├── auth.py
-│   │   ├── stk.py
-│   │   └── helpers.py
-│   ├── db.py
-│   └── security.py
 │
 ├── public/                           ← static assets Vite serves as-is
 │   └── favicon.ico
