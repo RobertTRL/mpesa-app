@@ -33,7 +33,7 @@ class STKPush:
             raise ValueError(f"Invalid phone number: {phone}. Expected format: 254XXXXXXXXX")
         return phone
 
-    def initiate(self, phone_number=254791154865, amount=100000, account_reference="TEST-001", transaction_description = "Payment"):
+    def initiate(self, phone_number='254791154865', amount=100000, account_reference="TEST-001", transaction_description = "Payment"):
         """
         Initiate an STK Push payment request.
 
@@ -58,7 +58,7 @@ class STKPush:
             "BusinessShortCode": self.shortcode,
             "Password":          password,
             "Timestamp":         timestamp,
-            "TransactionType":   "CustomerBuyGoodsOnline",
+            "TransactionType":   "CustomerPayBillOnline",
             "Amount":            amount,
             "PartyA":            normalized_phone,
             "PartyB":            self.shortcode,
@@ -125,4 +125,4 @@ class STKPush:
     
 auth = AccessToken()
 push = STKPush(auth)
-print(push)
+print(push.initiate())

@@ -66,8 +66,8 @@ stk_payload = {
     "BusinessShortCode": SHORTCODE,
     "Password":          password,
     "Timestamp":         timestamp,
-    "TransactionType":   "CustomerBuyGoodsOnline",
-    "Amount":            150000,                  # KES 1 for testing
+    "TransactionType":   "CustomerPayBillOnline",
+    "Amount":            1,                  # KES 1 for testing
     "PartyA":            TEST_NUMBER,         # who is paying
     "PartyB":            SHORTCODE,          # who is being paid (your shortcode)
     "PhoneNumber":       TEST_NUMBER,         # who gets the PIN prompt
@@ -118,6 +118,9 @@ else:
 
 print("\nStep 4: Querying STK Push status (optional — useful when callback isn't set up)...")
 
+print("Waiting 10 seconds for Safaricom to process...")
+time.sleep(30)
+
 if stk_data.get("ResponseCode") == "0":
     # Re-generate password — timestamp may have changed
     timestamp2 = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -155,4 +158,5 @@ if stk_data.get("ResponseCode") == "0":
     meaning = STATUS_MEANINGS.get(str(result_code), f"Unknown code: {result_code}")
     print(f"  ResultCode: {result_code} → {meaning}")
     print(f"  ResultDesc: {query_data.get('ResultDesc')}")
+    print(f"  Raw query response: {query_data}")
 
