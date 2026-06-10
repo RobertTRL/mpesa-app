@@ -13,15 +13,16 @@ export default function Form() {
   const navigate = useNavigate()
 
   const handleChange = (e) => {
-    setDetails((prev) => ({ ...prev, [e.target.name]: e.target.value }))
-  }
+    const { name, value } = e.target
+    setDetails((prev) => ({ ...prev, [name]: value }))
 
-  const validateNumber = () => {
-    setIsNumberValid(details.number.length === 10 && details.number[0] === '0')
-  }
+    if (name === 'number') {
+      setIsNumberValid(value.length === 10 && value[0] === '0')
+    }
 
-  const validateAmount = () => {
-    setIsAmountValid(Number(details.amount) >= 1)
+    if (name === 'amount') {
+      setIsAmountValid(Number(value) >= 1)
+    }
   }
 
   const pollStatus = async (checkoutId) => {
@@ -46,12 +47,17 @@ export default function Form() {
             },
           })
         } else {
-          throw new Error(data.resultDesc)
+          navigate('/failure', {
+            state: { reason: data.resultDesc }
+          })
         }
+        return
       }
     }
 
-    throw new Error("Payment confirmation timed out. Check your M-Pesa messages.")
+    navigate('/failure', {
+      state: { reason: 'Payment confirmation timed out. Check your M-Pesa messages.' }
+    })
   }
 
   const handleSubmit = async (e) => {
@@ -93,7 +99,6 @@ export default function Form() {
             placeholder="0123 456 789"
             id={numberId}
             onChange={handleChange}
-            onBlur={validateNumber}
             maxLength={10}
             value={details.number}
             name="number"
@@ -110,7 +115,6 @@ export default function Form() {
             placeholder="100"
             id={amountId}
             onChange={handleChange}
-            onBlur={validateAmount}
             value={details.amount}
             name="amount"
             min={1}
@@ -121,6 +125,10 @@ export default function Form() {
         </div>
 
         {error && <p className="warning">{error}</p>}
+
+        {loading && (
+          <p className="timeout">Check your phone and enter your M-Pesa PIN…</p>
+        )}
 
         <button
           type="submit"

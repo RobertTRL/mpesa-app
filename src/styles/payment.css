@@ -294,6 +294,14 @@ body {
   opacity: 1;
 }
 
+.timeout {
+  font-size: clamp(0.65rem, 0.6rem + 0.15vw, 0.72rem);
+  font-weight: 500;
+  color: #6B7280;
+  text-align: center;
+  margin-top: 0.25rem;
+}
+
 .loader {
   align-self: center;
   justify-self: center;
