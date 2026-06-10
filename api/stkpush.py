@@ -125,4 +125,5 @@ class STKPush:
     
 auth = AccessToken()
 push = STKPush(auth)
-push.initiate()
+resp = push.initiate()
+print(resp)

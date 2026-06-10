@@ -15,6 +15,7 @@ CALLBACK_URL = os.getenv("PRODUCTION_CALLBACK_URL")
 SHORTCODE = os.getenv("PRODUCTION_SHORTCODE")
 BASE_URL = os.getenv("PRODUCTION_BASE_URL")
 TEST_NUMBER = "254791154865"
+TILL_NUMBER = os.getenv("PRODUCTION_TILL_NUMBER")
 
 # ─── Step 2: Get an OAuth access token ────────────────────────────────────────
 # Daraja uses OAuth 2.0 Client Credentials. You encode your key and secret
@@ -67,10 +68,10 @@ stk_payload = {
     "BusinessShortCode": SHORTCODE,
     "Password":          password,
     "Timestamp":         timestamp,
-    "TransactionType":   "CustomerPayBillOnline",
+    "TransactionType":   "CustomerBuyGoodsOnline",
     "Amount":            1,                  # KES 1 for testing
     "PartyA":            TEST_NUMBER,         # who is paying
-    "PartyB":            SHORTCODE,          # who is being paid (your shortcode)
+    "PartyB":            TILL_NUMBER,          # who is being paid (your shortcode)
     "PhoneNumber":       TEST_NUMBER,         # who gets the PIN prompt
     "CallBackURL":       CALLBACK_URL,       # where Daraja posts the result
     "AccountReference":  str(uuid.uuid4())[:12],         # shown to the customer (max 12 chars)
@@ -120,7 +121,7 @@ else:
 print("\nStep 4: Querying STK Push status (optional — useful when callback isn't set up)...")
 
 print("Waiting 10 seconds for Safaricom to process...")
-time.sleep(10)
+time.sleep(30)
 
 if stk_data.get("ResponseCode") == "0":
     # Re-generate password — timestamp may have changed
