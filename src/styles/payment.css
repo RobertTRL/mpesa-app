@@ -320,3 +320,7 @@ body {
   50%   {transform:scaleY(-1) rotate(0deg)}
   100%  {transform:scaleY(-1) rotate(-135deg)}
 }
+
+.submit-btn:hover {
+  filter: brightness(0.88);
+}
