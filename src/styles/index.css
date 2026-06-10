@@ -5,13 +5,10 @@
   background-image: linear-gradient(
       90deg,
       transparent 50px,
-      #ffb4b8 50px,
-      #ffb4b8 52px,
       transparent 52px
     ),
     linear-gradient(#e1e1e1 0.1em, transparent 0.1em);
   background-size: 100% 30px;
-  transform: scale(1.105);
 }
 
 * {

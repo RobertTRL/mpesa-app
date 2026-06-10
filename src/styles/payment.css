@@ -18,7 +18,7 @@ html {
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: #ECEFFE;
-  min-height: 100lvh;
+  height: 100lvh;
   line-height: 1.5;
 }
 
@@ -26,14 +26,14 @@ body {
    Page Layout
 ────────────────────────────────────────── */
 .payment-page {
-  min-height: 100lvh;
+  height: 100lvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
 
   padding:
-    clamp(1.5rem, 1rem + 2vw, 2.5rem)
+    clamp(1rem, 1rem + 1.25vw, 2rem)
     clamp(1rem, 0.5rem + 2vw, 1.5rem);
 }
 
@@ -204,6 +204,29 @@ body {
 
 .submit-btn:active {
   transform: scale(0.985);
+}
+
+.field .warning {
+  font-size: clamp(0.65rem, 0.6rem + 0.15vw, 0.72rem);
+  font-weight: 500;
+  color: #B45309;
+  background: #FFFBEB;
+  border-left: 0.1875rem solid #F59E0B;
+  border-radius: 0 0.25rem 0.25rem 0;
+  padding: 0.35em 0.6em;
+  margin-top: 0.1rem;
+}
+
+/* Disabled button */
+.submit-btn:disabled {
+  background: #C7C4F0;
+  color: #fff;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.submit-btn:disabled:hover {
+  background: #C7C4F0;
 }
 
 /* ──────────────────────────────────────────
