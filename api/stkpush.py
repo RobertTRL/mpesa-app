@@ -15,6 +15,7 @@ class STKPush:
         self.shortcode    = os.environ.get("PRODUCTION_SHORTCODE")
         self.passkey      = os.environ.get("PRODUCTION_PASSKEY")
         self.callback_url = os.environ.get("PRODUCTION_CALLBACK_URL")
+        self.till_number = os.getenv("PRODUCTION_TILL_NUMBER")
         self.base_url = "https://api.safaricom.co.ke"
 
     def _generate_password(self):
@@ -33,7 +34,7 @@ class STKPush:
             raise ValueError(f"Invalid phone number: {phone}. Expected format: 254XXXXXXXXX")
         return phone
 
-    def initiate(self, phone_number='254791154865', amount=100000, account_reference="TEST-001", transaction_description = "Payment"):
+    def initiate(self, phone_number='254791154865', amount=1, account_reference="TEST-001", transaction_description = "Payment"):
         """
         Initiate an STK Push payment request.
 
@@ -58,10 +59,10 @@ class STKPush:
             "BusinessShortCode": self.shortcode,
             "Password":          password,
             "Timestamp":         timestamp,
-            "TransactionType":   "CustomerPayBillOnline",
+            "TransactionType":   "CustomerBuyGoodsOnline",
             "Amount":            amount,
             "PartyA":            normalized_phone,
-            "PartyB":            self.shortcode,
+            "PartyB":            self.till_number,
             "PhoneNumber":       normalized_phone,
             "CallBackURL":       self.callback_url,
             "AccountReference":  account_reference,
@@ -125,5 +126,4 @@ class STKPush:
     
 auth = AccessToken()
 push = STKPush(auth)
-resp = push.initiate()
-print(resp)
+push.initiate()
