@@ -4,7 +4,7 @@ import os
 import psycopg2
 
 def get_db():
-    return psycopg2.connect(os.environ("DATABASE_URL"))
+    return psycopg2.connect(os.getenv("DATABASE_URL"))
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
