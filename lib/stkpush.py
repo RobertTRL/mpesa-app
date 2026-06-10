@@ -123,7 +123,4 @@ class STKPush:
             timeout=30,
         )
         return response.json()
-    
-auth = AccessToken()
-push = STKPush(auth)
-push.initiate()
+
