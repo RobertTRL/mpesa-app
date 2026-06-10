@@ -4,6 +4,7 @@ import requests
 from datetime import datetime
 import base64
 import time
+import uuid
 
 load_dotenv()
 
@@ -72,7 +73,7 @@ stk_payload = {
     "PartyB":            SHORTCODE,          # who is being paid (your shortcode)
     "PhoneNumber":       TEST_NUMBER,         # who gets the PIN prompt
     "CallBackURL":       CALLBACK_URL,       # where Daraja posts the result
-    "AccountReference":  "TEST-001",         # shown to the customer (max 12 chars)
+    "AccountReference":  str(uuid.uuid4())[:12],         # shown to the customer (max 12 chars)
     "TransactionDesc":   "Test payment",     # brief description (max 13 chars)
 }
 
@@ -119,7 +120,7 @@ else:
 print("\nStep 4: Querying STK Push status (optional — useful when callback isn't set up)...")
 
 print("Waiting 10 seconds for Safaricom to process...")
-time.sleep(30)
+time.sleep(10)
 
 if stk_data.get("ResponseCode") == "0":
     # Re-generate password — timestamp may have changed
