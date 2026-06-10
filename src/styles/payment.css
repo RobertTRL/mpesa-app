@@ -1,0 +1,272 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ──────────────────────────────────────────
+   Fluid Root Typography
+────────────────────────────────────────── */
+html {
+  font-size: clamp(15px, 0.9vw + 12px, 18px);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #ECEFFE;
+  min-height: 100lvh;
+  line-height: 1.5;
+}
+
+/* ──────────────────────────────────────────
+   Page Layout
+────────────────────────────────────────── */
+.payment-page {
+  min-height: 100lvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding:
+    clamp(1.5rem, 1rem + 2vw, 2.5rem)
+    clamp(1rem, 0.5rem + 2vw, 1.5rem);
+}
+
+.payment-inner {
+  width: 100%;
+  max-width: clamp(16rem, 75vw, 25rem);
+
+  display: flex;
+  flex-direction: column;
+
+  gap: clamp(0.75rem, 0.5rem + 1vw, 1rem);
+}
+
+/* ──────────────────────────────────────────
+   Header
+────────────────────────────────────────── */
+.header {
+  text-align: center;
+  padding-bottom: 0.25rem;
+  background: #fff;
+  border-radius: clamp(1rem, 0.8rem + 0.5vw, 1.25rem);
+  padding: clamp(1.25rem, 1rem + 1vw, 1.5rem);
+  box-shadow:
+    0 0.125rem 0.5rem rgba(79, 70, 229, 0.06),
+    0 0.5rem 2rem rgba(79, 70, 229, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.15rem, 0.1rem + 0.4vw, 0.9rem);
+}
+
+.header h1 {
+  font-size: clamp(1.25rem, 1rem + 1vw, 1.75rem);
+  font-weight: 700;
+  color: #1E1B4B;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.header p {
+  font-size: clamp(0.75rem, 0.7rem + 0.2vw, 0.875rem);
+  color: #7C83A0;
+  margin-top: 0.3em;
+}
+
+/* ──────────────────────────────────────────
+   Form Card
+────────────────────────────────────────── */
+.form-card {
+  background: #fff;
+
+  border-radius: clamp(1rem, 0.8rem + 0.5vw, 1.25rem);
+
+  overflow: hidden;
+
+  box-shadow:
+    0 0.125rem 0.5rem rgba(79, 70, 229, 0.06),
+    0 0.5rem 2rem rgba(79, 70, 229, 0.08);
+}
+
+.form-card-bar {
+  height: 0.1875rem;
+  background: linear-gradient(
+    90deg,
+    #4F46E5 0%,
+    #7C3AED 100%
+  );
+}
+
+.form-inner {
+  padding:
+    clamp(1.25rem, 1rem + 1vw, 1.75rem)
+    clamp(1rem, 0.75rem + 1vw, 1.5rem)
+    clamp(1.5rem, 1.25rem + 1vw, 2rem);
+
+  display: flex;
+  flex-direction: column;
+
+  gap: clamp(1rem, 0.75rem + 1vw, 1.625rem);
+}
+
+.form-heading {
+  font-size: clamp(0.875rem, 0.8rem + 0.3vw, 1rem);
+  font-weight: 600;
+  color: #1E1B4B;
+}
+
+/* ──────────────────────────────────────────
+   Fields
+────────────────────────────────────────── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field label {
+  font-size: clamp(0.65rem, 0.6rem + 0.2vw, 0.75rem);
+  font-weight: 600;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  color: #9CA3AF;
+}
+
+.field input {
+  width: 100%;
+
+  border: none;
+  border-bottom: 0.125rem solid #E5E7EB;
+
+  padding-block: 0.65em;
+
+  font-size: clamp(0.95rem, 0.9rem + 0.25vw, 1rem);
+  font-family: inherit;
+  font-weight: 500;
+
+  color: #1E1B4B;
+  background: transparent;
+
+  outline: none;
+
+  transition: border-color 0.18s ease;
+}
+
+.field input::placeholder {
+  color: #D1D5DB;
+  font-weight: 400;
+}
+
+.field input:focus {
+  border-bottom-color: #4F46E5;
+}
+
+/* ──────────────────────────────────────────
+   Submit Button
+────────────────────────────────────────── */
+.submit-btn {
+  margin-top: 0.25rem;
+
+  width: 100%;
+
+  border: none;
+  border-radius: 0.75rem;
+
+  background: #4F46E5;
+  color: #fff;
+
+  padding: 0.95em 1.25em;
+
+  font-size: clamp(0.9rem, 0.85rem + 0.3vw, 1rem);
+  font-family: inherit;
+  font-weight: 600;
+
+  letter-spacing: 0.01em;
+
+  cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    transform 0.1s ease;
+}
+
+.submit-btn:hover {
+  background: #3730A3;
+}
+
+.submit-btn:active {
+  transform: scale(0.985);
+}
+
+/* ──────────────────────────────────────────
+   QR Card
+────────────────────────────────────────── */
+.qr-card {
+  background: #fff;
+
+  border-radius: clamp(1rem, 0.8rem + 0.5vw, 1.25rem);
+
+  padding: clamp(1.25rem, 1rem + 1vw, 1.5rem);
+
+  text-align: center;
+
+  box-shadow:
+    0 0.125rem 0.5rem rgba(79, 70, 229, 0.06),
+    0 0.5rem 2rem rgba(79, 70, 229, 0.08);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: clamp(0.75rem, 0.5rem + 0.5vw, 0.9rem);
+}
+
+.qr-label {
+  font-size: clamp(0.65rem, 0.6rem + 0.2vw, 0.75rem);
+  font-weight: 600;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  color: #9CA3AF;
+}
+
+.qr-box {
+  width: clamp(6rem, 5rem + 3vw, 8rem);
+  height: clamp(6rem, 5rem + 3vw, 8rem);
+
+  border-radius: 0.625rem;
+
+  background: #ECEFFE;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-grid {
+  display: grid;
+
+  grid-template-columns: repeat(7, 0.625rem);
+  grid-template-rows: repeat(7, 0.625rem);
+
+  gap: 0.125rem;
+}
+
+.qr-cell {
+  border-radius: 0.0625rem;
+  background: #4F46E5;
+  opacity: 0;
+}
+
+.qr-cell.on {
+  opacity: 1;
+}
