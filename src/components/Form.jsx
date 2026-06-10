@@ -19,9 +19,24 @@ export default function Form() {
     setIsAmountValid(Number(details.amount) >= 1)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log(details)
+    try {
+    const res = await fetch("https://mpesa-app-indol.vercel.app//api/pay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: String(details.number), amount: Number(details.amount)})
+    })
+    if (!res.ok) throw new Error("Payment failed")
+    setDetails({ number: '', amount: '' })
+    setIsNumberValid(false)
+    setIsAmountValid(false)
+    navigate("/success")
+}   catch (err) {
+    console.log(err)
+    navigate("/failure")
+}
+
   }
 
   return (
