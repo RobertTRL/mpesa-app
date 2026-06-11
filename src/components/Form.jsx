@@ -1,6 +1,6 @@
 import { useState, useId } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { waitForPayment } from '../utils/waitForPayment'
+import { waitForPayment } from '../../utils/waitForPayment'
 
 export default function Form() {
   const numberId = useId()
@@ -66,7 +66,7 @@ export default function Form() {
       }
 
     } catch (err) {
-      
+
       setError(err.message)
       setLoading(false)
     }

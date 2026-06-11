@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase.js'
 
 export function waitForPayment(checkoutId, timeoutMs = 60000) {
     
