@@ -4,3 +4,4 @@ PyJWT
 bcrypt
 upstash-redis
 psycopg2-binary
+supabase

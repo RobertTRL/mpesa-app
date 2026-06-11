@@ -16,6 +16,7 @@ venv/
 src.zip
 lib/basicstkpush.py
 api/callbackserver.py
+api/status.py
 
 # Editor directories and files
 .vscode/*

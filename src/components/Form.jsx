@@ -1,5 +1,6 @@
 import { useState, useId } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { waitForPayment } from '../utils/waitForPayment'
 
 export default function Form() {
   const numberId = useId()
@@ -15,50 +16,12 @@ export default function Form() {
   const handleChange = (e) => {
     const { name, value } = e.target
     setDetails((prev) => ({ ...prev, [name]: value }))
-
     if (name === 'number') {
       setIsNumberValid(value.length === 10 && value[0] === '0')
     }
-
     if (name === 'amount') {
       setIsAmountValid(Number(value) >= 1)
     }
-  }
-
-  const pollStatus = async (checkoutId) => {
-    const MAX_ATTEMPTS = 10
-    const FIRST_DELAY = 5000
-    const INTERVAL_MS = 3000
-
-    for (let i = 0; i < MAX_ATTEMPTS; i++) {
-      await new Promise(r => setTimeout(r, i === 0 ? FIRST_DELAY :INTERVAL_MS))
-
-      const res = await fetch(
-        `https://mpesa-app-indol.vercel.app/api/status?id=${checkoutId}`
-      )
-      const data = await res.json()
-
-      if (data.found) {
-        if (Number(data.resultCode) === 0) {
-          navigate('/success', {
-            state: {
-              receipt: data.receipt,
-              amount: data.amount,
-              phone: data.phone,
-            },
-          })
-        } else {
-          navigate('/failure', {
-            state: { reason: data.resultDesc }
-          })
-        }
-        return
-      }
-    }
-
-    navigate('/failure', {
-      state: { reason: 'Payment confirmation timed out. Check your M-Pesa messages.' }
-    })
   }
 
   const handleSubmit = async (e) => {
@@ -67,6 +30,7 @@ export default function Form() {
     setLoading(true)
 
     try {
+      // 1. Trigger STK Push
       const res = await fetch("https://mpesa-app-indol.vercel.app/api/pay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -79,20 +43,39 @@ export default function Form() {
       const data = await res.json()
       if (!res.ok || !data.success) throw new Error(data.error || "Payment initiation failed")
 
-      await pollStatus(data.checkout_request_id)
+      // 2. Wait for callback → Supabase → instant notification
+
+      const payment = await waitForPayment(data.checkout_request_id)
+
+      // 3. Redirect based on result
+
+      if (payment.result_code === 0) {
+        navigate('/success', {
+          state: {
+            receipt: payment.mpesa_receipt,
+            amount: payment.amount,
+            phone: payment.phone,
+          },
+        })
+
+      } else {
+
+        navigate('/failure', {
+          state: { reason: payment.result_desc },
+        })
+      }
 
     } catch (err) {
+      
       setError(err.message)
       setLoading(false)
     }
   }
-
   return (
     <form className="form-card" onSubmit={handleSubmit}>
       <div className="form-card-bar" />
       <div className="form-inner">
         <p className="form-heading">Payment details</p>
-
         <div className="field">
           <label htmlFor={numberId}>Mobile number</label>
           <input
@@ -108,7 +91,6 @@ export default function Form() {
             <p className="warning">Enter a valid number</p>
           )}
         </div>
-
         <div className="field">
           <label htmlFor={amountId}>Amount (KSH)</label>
           <input
@@ -124,13 +106,10 @@ export default function Form() {
             <p className="warning">Enter a valid amount</p>
           )}
         </div>
-
         {error && <p className="warning">{error}</p>}
-
         {loading && (
           <p className="timeout">Check your phone and enter your M-Pesa PIN…</p>
         )}
-
         <button
           type="submit"
           className="submit-btn"
@@ -138,7 +117,6 @@ export default function Form() {
         >
           {loading ? <div className="loader"></div> : "Send payment"}
         </button>
-
       </div>
     </form>
   )
