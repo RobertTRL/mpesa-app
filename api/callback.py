@@ -3,8 +3,10 @@ import json
 import os
 import psycopg2
 
+
 def get_db():
     return psycopg2.connect(os.getenv("DATABASE_URL"))
+
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -32,6 +34,10 @@ class handler(BaseHTTPRequestHandler):
                 phone      = metadata.get("PhoneNumber")
 
             # ── 4. Save to Supabase ───────────────────────────────
+            # Uses UPSERT: updates the pending record from pay.py,
+            # or inserts a new one if it doesn't exist.
+            # COALESCE keeps the phone/amount from the pending record
+            # when the callback doesn't include them (e.g. on cancel).
             conn = get_db()
             cur  = conn.cursor()
             cur.execute("""
@@ -44,7 +50,12 @@ class handler(BaseHTTPRequestHandler):
                     phone
                 )
                 VALUES (%s, %s, %s, %s, %s, %s)
-                ON CONFLICT (checkout_request_id) DO NOTHING
+                ON CONFLICT (checkout_request_id) DO UPDATE SET
+                    result_code   = EXCLUDED.result_code,
+                    result_desc   = EXCLUDED.result_desc,
+                    amount        = COALESCE(EXCLUDED.amount, mpesa_payments.amount),
+                    mpesa_receipt = COALESCE(EXCLUDED.mpesa_receipt, mpesa_payments.mpesa_receipt),
+                    phone         = COALESCE(EXCLUDED.phone, mpesa_payments.phone)
             """, (
                 checkout_request_id,
                 result_code,

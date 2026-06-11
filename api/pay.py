@@ -2,10 +2,17 @@ from http.server import BaseHTTPRequestHandler
 import json
 import sys
 import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import psycopg2
 from lib.accesstoken import AccessToken
 from lib.stkpush import STKPush
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+def get_db():
+    return psycopg2.connect(os.getenv("DATABASE_URL"))
+
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -16,6 +23,7 @@ class handler(BaseHTTPRequestHandler):
         if not phone or not amount:
             self._respond(400, {"success": False, "error": "phone and amount are required"})
             return
+
         try:
             auth = AccessToken()
             push = STKPush(auth)
@@ -25,6 +33,27 @@ class handler(BaseHTTPRequestHandler):
                 account_reference="BOBTOROITICH",
                 transaction_description="Payment"
             )
+
+            # Save pending record with phone & amount so we have them even if user cancels
+            if result["success"]:
+                try:
+                    normalized_phone = phone.strip().replace(" ", "")
+                    if normalized_phone.startswith("+"): normalized_phone = normalized_phone[1:]
+                    if normalized_phone.startswith("0"): normalized_phone = "254" + normalized_phone[1:]
+
+                    conn = get_db()
+                    cur = conn.cursor()
+                    cur.execute("""
+                        INSERT INTO mpesa_payments (checkout_request_id, result_code, result_desc, phone, amount)
+                        VALUES (%s, -1, 'Pending', %s, %s)
+                        ON CONFLICT (checkout_request_id) DO NOTHING
+                    """, (result["checkout_request_id"], normalized_phone, int(amount)))
+                    conn.commit()
+                    cur.close()
+                    conn.close()
+                except Exception as e:
+                    print(f"[WARN] Could not save pending record: {e}")
+
             self._respond(200 if result["success"] else 400, result)
 
         except Exception as e:

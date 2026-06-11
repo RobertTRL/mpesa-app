@@ -26,7 +26,7 @@ export function waitForPayment(checkoutId, timeoutMs = 60000) {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'mpesa_payments',
           filter: `checkout_request_id=eq.${checkoutId}`,
