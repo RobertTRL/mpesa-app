@@ -205,41 +205,6 @@ Create a `.env` file in the project root based on `.env.example`. The following 
 
 All backend routes are Python serverless functions under `api/`. In production they are available at your Vercel deployment domain. In local dev they run via `vercel dev`.
 
-### Authentication
-
-#### `POST /api/auth/login`
-
-Authenticate a user and receive a JWT.
-
-**Request body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "yourpassword"
-}
-```
-
-**Response (200):**
-```json
-{
-  "token": "<JWT>",
-  "user": { "id": "...", "email": "user@example.com" }
-}
-```
-
-**Response (401):**
-```json
-{ "error": "Invalid credentials" }
-```
-
-#### `POST /api/auth/logout`
-
-Invalidates the current session.
-
-**Headers:** `Authorization: Bearer <JWT>`
-
----
-
 ### Payments
 
 All payment endpoints require `Authorization: Bearer <JWT>` in the request header.
