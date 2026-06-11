@@ -27,10 +27,11 @@ export default function Form() {
 
   const pollStatus = async (checkoutId) => {
     const MAX_ATTEMPTS = 10
+    const FIRST_DELAY = 5000
     const INTERVAL_MS = 3000
 
     for (let i = 0; i < MAX_ATTEMPTS; i++) {
-      await new Promise(r => setTimeout(r, INTERVAL_MS))
+      await new Promise(r => setTimeout(r, i === 0 ? FIRST_DELAY :INTERVAL_MS))
 
       const res = await fetch(
         `https://mpesa-app-indol.vercel.app/api/status?id=${checkoutId}`
