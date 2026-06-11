@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import greencheck from '../assets/greencheck.webp'
+import greencheck from '../assets/greencheck.png'
 
 export default function Success() {
   const navigate = useNavigate()
