@@ -78,7 +78,7 @@ export default function Form() {
       const data = await res.json()
       if (!res.ok || !data.success) throw new Error(data.error || "Payment initiation failed")
 
-      await pollStatus(data.CheckoutRequestID)
+      await pollStatus(data.checkout_request_id)
 
     } catch (err) {
       setError(err.message)
