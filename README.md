@@ -1,6 +1,6 @@
-# M-Pesa App
+# M-Pesa Prompting App
 
-A full-stack web application for integrating and interacting with Safaricom's M-Pesa payment APIs. Built with a React frontend and Python serverless backend deployed on Vercel, the app supports STK Push (Lipa Na M-Pesa), C2B, B2C, B2B, transaction status checks, account balance queries, and payment reversals — all behind a JWT-authenticated user interface.
+A focused, production-ready web application for triggering M-Pesa STK Push (Lipa Na M-Pesa) payments. Built with a React frontend and a Python serverless backend deployed on Vercel. The customer enters their phone number and an amount, receives a PIN prompt on their phone, and the UI updates in real time when Safaricom confirms the payment — no page refresh needed.
 
 ---
 
@@ -10,15 +10,14 @@ A full-stack web application for integrating and interacting with Safaricom's M-
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
+- [Project Structure](#project-structure)
 - [Installation](#installation)
 - [Environment Variables](#environment-variables)
+- [Database Schema](#database-schema)
 - [Usage](#usage)
-- [API Documentation](#api-documentation)
-- [Project Structure](#project-structure)
-- [Development](#development)
+- [API Reference](#api-reference)
 - [Deployment](#deployment)
-- [Security Notes](#security-notes)
-- [Known Issues / Limitations](#known-issues--limitations)
+- [Known Limitations](#known-limitations)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -26,29 +25,23 @@ A full-stack web application for integrating and interacting with Safaricom's M-
 
 ## Overview
 
-**What it does:** This application provides a web-based dashboard for triggering and managing M-Pesa transactions. It abstracts the complexity of Safaricom's Daraja API into a clean React UI backed by Python serverless functions.
+**What it does:** Presents a payment form where a user enters a Safaricom phone number and an amount. On submission the backend calls Safaricom's Daraja STK Push API, which sends a PIN prompt to the customer's phone. The frontend subscribes to the `mpesa_payments` table via Supabase Realtime and navigates to a success or failure screen the moment Safaricom's callback updates the database record — with no polling required.
 
-**Problem it solves:** Integrating M-Pesa's Daraja API requires handling OAuth token generation, STK Push callbacks, C2B URL registration, B2C disbursements, and more — all while keeping credentials secure. This project packages all of that logic into a deployable, stateful web app.
+**Problem it solves:** Wires together the three moving parts of a live STK Push flow — token management, payment initiation, and asynchronous callback handling — into a deployable, end-to-end web app.
 
-**Intended users:** Developers, product teams, and fintech operators in Kenya (or anywhere M-Pesa operates) who need a ready-made integration layer or a reference implementation for the Daraja API.
+**Intended users:** Developers and operators in Kenya who need a working M-Pesa STK Push integration they can deploy and extend.
 
 ---
 
 ## Features
 
-- **STK Push (Lipa Na M-Pesa Online)** — Initiate customer-to-business payments directly from the dashboard
-- **STK Push Callback** — Receives and processes Safaricom's asynchronous payment confirmations
-- **C2B Registration** — Register confirmation and validation URLs for Customer-to-Business payments
-- **C2B Validation & Confirmation** — Handle real-time C2B payment events from Safaricom
-- **B2C Payments** — Send money from a business shortcode to individual M-Pesa users
-- **B2B Payments** — Business-to-business payment initiation
-- **Transaction Status Check** — Query the status of any M-Pesa transaction
-- **Account Balance Query** — Check the balance of an M-Pesa shortcode
-- **Payment Reversal** — Reverse a completed M-Pesa transaction
-- **JWT Authentication** — Login/logout flow protecting all dashboard routes
-- **Transaction List** — View a history of payment activity
-- **Supabase Persistence** — Transactions and user data stored in a PostgreSQL database via Supabase
-- **Redis Caching** — M-Pesa access tokens cached in Upstash Redis to avoid unnecessary OAuth calls
+- **STK Push initiation** — submits a Lipa Na M-Pesa Online payment request to Safaricom's Daraja API
+- **Asynchronous callback handling** — receives Safaricom's POST callback, parses the result, and upserts it to the database
+- **Real-time payment status** — the frontend uses Supabase Realtime (Postgres `LISTEN`/`NOTIFY`) to detect the callback update and navigate immediately, without polling
+- **Redis token caching** — the M-Pesa OAuth access token is cached in Upstash Redis for 55 minutes, avoiding a round-trip to Safaricom on every request
+- **Pending record pattern** — a `result_code = -1` placeholder row is written at initiation time so the callback always has a row to `UPDATE` into, even when it arrives in milliseconds
+- **Phone number normalisation** — accepts `07XXXXXXXX`, `+2547XXXXXXXX`, or `2547XXXXXXXX` and normalises to the `2547XXXXXXXX` format the API requires
+- **QR code placeholder** — a QR card section is present in the UI and flagged in source as pending implementation
 
 ---
 
@@ -56,43 +49,116 @@ A full-stack web application for integrating and interacting with Safaricom's M-
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | React 19, Vite 8 |
-| **Backend** | Python (serverless functions on Vercel) |
-| **Database** | Supabase (PostgreSQL) |
-| **Caching** | Upstash Redis |
-| **Authentication** | JWT (`PyJWT`), `bcrypt` password hashing |
+| **Frontend** | React 19, React Router v7, Vite 8 |
+| **Backend** | Python serverless functions (Vercel) |
+| **Database** | PostgreSQL via Supabase (psycopg2 on backend, `@supabase/supabase-js` on frontend) |
+| **Realtime** | Supabase Realtime (Postgres changes) |
+| **Caching** | Upstash Redis (REST API via `upstash-redis`) |
 | **HTTP (Python)** | `requests` |
 | **Environment** | `python-dotenv` |
-| **Build Tool** | Vite |
+| **Build tool** | Vite |
 | **Linting** | ESLint 10 with `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh` |
 | **Deployment** | Vercel (frontend + Python serverless functions) |
 | **External API** | Safaricom Daraja API (M-Pesa) |
+
+> **Note:** `PyJWT` and `bcrypt` are listed in `requirements.txt` but are not currently used. They are retained for a planned authentication layer.
 
 ---
 
 ## Architecture
 
-The application follows a **decoupled frontend/backend architecture** deployed as a single Vercel project:
-
 ```
 Browser (React SPA)
         │
-        │  HTTP requests (via Vite proxy in dev / direct in prod)
+        │  POST /api/pay  (fetch to Vercel deployment URL)
         ▼
 Vercel Serverless Functions (Python)
         │
-        ├── Daraja API (Safaricom M-Pesa)   ← outbound payment requests
-        ├── Upstash Redis                    ← access token cache
-        └── Supabase (PostgreSQL)            ← transaction & user storage
+        ├── Daraja API (Safaricom)   ← STK Push request
+        ├── Upstash Redis            ← access token cache
+        └── Supabase (PostgreSQL)    ← writes pending payment record
+                │
+                │  Safaricom POSTs callback to /api/callback
+                ▼
+        api/callback.py  → upserts result into mpesa_payments
+                │
+                │  Supabase Realtime notifies frontend subscriber
+                ▼
+        Browser navigates to /success or /failure
 ```
 
-**Frontend (`src/`):** A React single-page application with pages for Login and Dashboard. Components handle the payment form, transaction list, and payment status display. Auth state is managed via React Context. API calls are made via service modules (`auth.js`, `payment.js`).
+**Payment flow step by step:**
 
-**Backend (`api/`):** Python files in the `api/` directory are automatically treated as serverless functions by Vercel. Each file corresponds to one endpoint. Shared utilities live in `api/lib/` (`auth.py` for OAuth token management, `helpers.py` for response formatting).
+1. The user submits the payment form (phone + amount).
+2. The frontend POSTs to `/api/pay`.
+3. `api/pay.py` fetches an M-Pesa access token (from Redis cache or Daraja OAuth), calls STK Push, and writes a pending row (`result_code = -1`) to `mpesa_payments`.
+4. The frontend receives the `checkout_request_id` and calls `waitForPayment()`, which first checks whether a non-pending result already exists in the table, then subscribes to Supabase Realtime for an `UPDATE` event on that row.
+5. The customer enters their M-Pesa PIN on their phone.
+6. Safaricom POSTs the result to `/api/callback`.
+7. `api/callback.py` upserts the result (receipt number, amount, phone, result code) using `COALESCE` so that fields already saved at initiation are not overwritten with nulls.
+8. Supabase Realtime fires, `waitForPayment()` resolves, and the frontend navigates to `/success` (with receipt details) or `/failure`.
 
-**Auth flow:** The frontend submits credentials to `/api/auth/login`, which validates them against a Supabase user record (bcrypt-hashed passwords) and returns a signed JWT. All subsequent API calls include this JWT as a Bearer token; the Python functions verify it on every request.
+---
 
-**M-Pesa token management:** Rather than calling Safaricom's OAuth endpoint on every request, the backend caches the access token in Upstash Redis with a TTL matching the token's expiry, minimising latency and API rate-limit exposure.
+## Project Structure
+
+```
+mpesa-app/
+│
+├── src/                          # React frontend
+│   ├── components/
+│   │   ├── Form.jsx              # Payment form — phone, amount, submit
+│   │   ├── Header.jsx            # Page header / title
+│   │   └── Qrcode.jsx            # QR code card (pending implementation)
+│   │
+│   ├── pages/
+│   │   ├── App.jsx               # Root component — React Router routes
+│   │   ├── Payment.jsx           # Main payment page (Form + Header + QR)
+│   │   ├── Success.jsx           # Shown after confirmed payment
+│   │   ├── Failure.jsx           # Shown after cancelled/failed payment
+│   │   └── Loading.jsx           # (currently unused)
+│   │
+│   ├── styles/
+│   │   ├── index.css
+│   │   ├── App.css
+│   │   └── payment.css
+│   │
+│   ├── assets/
+│   │   ├── greencheck.png        # Success icon
+│   │   └── redcross.webp         # Failure icon
+│   │
+│   └── main.jsx                  # React entry point — mounts BrowserRouter
+│
+├── api/                          # Python serverless functions (Vercel)
+│   ├── pay.py                    # POST /api/pay  — initiates STK Push
+│   └── callback.py               # POST /api/callback  — receives Safaricom callback
+│
+├── lib/                          # Shared Python utilities
+│   ├── accesstoken.py            # OAuth token fetch + Upstash Redis caching
+│   ├── stkpush.py                # STK Push request builder and sender
+│   ├── helpers.py                # (stub — reserved for shared response helpers)
+│   └── supabase.js               # Supabase JS client (used by frontend utils)
+│
+├── utils/
+│   └── waitForPayment.js         # Supabase Realtime subscriber — awaits callback result
+│
+├── public/
+│   └── brain.png                 # Favicon
+│
+├── index.html                    # Vite HTML entry point
+├── vite.config.js                # Vite config
+├── eslint.config.js              # ESLint configuration
+├── package.json                  # JS dependencies and scripts
+├── package-lock.json             # Lockfile (commit this)
+├── requirements.txt              # Python dependencies
+├── vercel.json                   # Vercel build + SPA rewrite config
+├── .gitignore
+├── CONTRIBUTING.md
+├── DOCUMENTATION.md              # Extended Daraja API reference guide
+└── LICENSE.md
+```
+
+> **Note:** `venv/`, `node_modules/`, `dist/`, and `.env` are auto-generated or secret and are excluded from version control per `.gitignore`. Several local development scripts (`lib/basicstkpush.py`, `api/callbackserver.py`, `api/status.py`) are also gitignored — they may contain hardcoded values and must never be committed.
 
 ---
 
@@ -102,10 +168,10 @@ Vercel Serverless Functions (Python)
 
 - Node.js ≥ 18
 - Python 3.9+
-- A [Safaricom Daraja developer account](https://developer.safaricom.co.ke/)
-- A [Supabase](https://supabase.com/) project with a PostgreSQL database
-- An [Upstash](https://upstash.com/) Redis database
-- A [Vercel](https://vercel.com/) account (for deployment) or the Vercel CLI (for local dev with serverless functions)
+- A [Safaricom Daraja developer account](https://developer.safaricom.co.ke/) — to obtain API credentials and a shortcode/till number
+- A [Supabase](https://supabase.com/) project — for the PostgreSQL database and Realtime subscriptions
+- An [Upstash](https://upstash.com/) Redis database — for access token caching
+- A [Vercel](https://vercel.com/) account — for deployment and running Python serverless functions locally
 
 ### 1. Clone the repository
 
@@ -120,7 +186,7 @@ cd mpesa-app
 npm install
 ```
 
-### 3. Set up Python virtual environment and install dependencies
+### 3. Set up Python virtual environment
 
 ```bash
 python3 -m venv venv
@@ -130,54 +196,88 @@ pip install -r requirements.txt
 
 ### 4. Configure environment variables
 
-```bash
-cp .env.example .env
-```
-
-Open `.env` and fill in all required values (see [Environment Variables](#environment-variables) below).
+Create a `.env` file in the project root. See [Environment Variables](#environment-variables) for the full list. There is no `.env.example` file committed — use the table below as your template.
 
 ### 5. Start the development server
 
-For frontend-only development (no serverless functions):
+**Frontend only** (no Python API functions):
 
 ```bash
 npm run dev
 ```
 
-For full-stack local development (frontend + Python API functions), use the Vercel CLI:
+**Full stack** (frontend + Python serverless functions via Vercel CLI):
 
 ```bash
 npm install -g vercel
 vercel dev
 ```
 
-> **Note:** `vercel dev` is required to run the Python serverless functions locally. `npm run dev` alone will only serve the React frontend.
+> `vercel dev` is required to run `api/pay.py` and `api/callback.py` locally. `npm run dev` serves only the React frontend.
+
+> **Important:** The frontend currently hardcodes the production Vercel deployment URL (`https://mpesa-app-indol.vercel.app/api/pay`) inside `src/components/Form.jsx`. For local development against `vercel dev`, change this to `http://localhost:3000/api/pay` (or your local Vercel dev port).
 
 ---
 
 ## Environment Variables
 
-Create a `.env` file in the project root based on `.env.example`. The following variables are required:
+Create a `.env` file at the project root with the following variables. Use Vercel's environment variable settings for production secrets.
 
-| Variable | Required | Description |
-|---|---|---|
-| `MPESA_CONSUMER_KEY` | ✅ | Daraja API consumer key from the Safaricom developer portal |
-| `MPESA_CONSUMER_SECRET` | ✅ | Daraja API consumer secret from the Safaricom developer portal |
-| `MPESA_SHORTCODE` | ✅ | Your M-Pesa business shortcode (paybill or till number) |
-| `MPESA_PASSKEY` | ✅ | STK Push passkey provided by Safaricom for your shortcode |
-| `MPESA_CALLBACK_URL` | ✅ | Public HTTPS URL where Safaricom will POST STK Push results (e.g. your Vercel deployment URL + `/api/callbacks/stk`) |
-| `MPESA_C2B_CONFIRMATION_URL` | ✅ | Public HTTPS URL for C2B payment confirmations |
-| `MPESA_C2B_VALIDATION_URL` | ✅ | Public HTTPS URL for C2B payment validation |
-| `MPESA_B2C_INITIATOR_NAME` | ✅ | The API operator username for B2C transactions |
-| `MPESA_B2C_SECURITY_CREDENTIAL` | ✅ | Base64-encoded, encrypted initiator password for B2C |
-| `MPESA_ENVIRONMENT` | ✅ | `sandbox` or `production` — controls which Daraja base URL is used |
-| `SUPABASE_URL` | ✅ | Your Supabase project URL |
-| `SUPABASE_KEY` | ✅ | Supabase service role key (keep secret — grants full DB access) |
-| `UPSTASH_REDIS_REST_URL` | ✅ | Upstash Redis REST endpoint URL |
-| `UPSTASH_REDIS_REST_TOKEN` | ✅ | Upstash Redis REST auth token |
-| `JWT_SECRET` | ✅ | A long random string used to sign and verify JWTs |
+### Backend (Python) — required
 
-> ⚠️ **Never commit `.env` to version control.** The `.gitignore` already excludes it. Use Vercel's environment variable settings for production secrets.
+| Variable | Description |
+|---|---|
+| `PRODUCTION_CONSUMER_KEY` | Daraja API consumer key from the Safaricom developer portal |
+| `PRODUCTION_CONSUMER_SECRET` | Daraja API consumer secret |
+| `PRODUCTION_BASE_URL` | Daraja base URL — `https://api.safaricom.co.ke` for production or `https://sandbox.safaricom.co.ke` for sandbox |
+| `PRODUCTION_SHORTCODE` | Your M-Pesa business shortcode (paybill number) |
+| `PRODUCTION_PASSKEY` | STK Push passkey provided by Safaricom for your shortcode |
+| `PRODUCTION_TILL_NUMBER` | Your Buy Goods till number (used as `PartyB` in the STK Push payload) |
+| `PRODUCTION_CALLBACK_URL` | Public HTTPS URL where Safaricom will POST STK Push results — must be your Vercel deployment URL + `/api/callback` |
+| `DATABASE_URL` | Full PostgreSQL connection string for your Supabase database (e.g. `postgresql://postgres:<password>@<host>:5432/postgres`) |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST endpoint URL |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST auth token |
+
+### Frontend (Vite) — required
+
+These variables must be prefixed with `VITE_` to be exposed to the browser by Vite.
+
+| Variable | Description |
+|---|---|
+| `VITE_SUPABASE_URL` | Your Supabase project URL (e.g. `https://xyzxyz.supabase.co`) |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase `anon` / publishable key — safe to expose in the frontend |
+
+> ⚠️ **Never commit `.env` to version control.** `.gitignore` already excludes it. The `VITE_SUPABASE_PUBLISHABLE_KEY` is intentionally a public (anon) key — do not substitute the service role key here.
+
+---
+
+## Database Schema
+
+The application uses a single table, `mpesa_payments`, in your Supabase PostgreSQL database. You must create this table manually before running the app.
+
+```sql
+CREATE TABLE mpesa_payments (
+    id                   SERIAL PRIMARY KEY,
+    checkout_request_id  VARCHAR(100) UNIQUE NOT NULL,
+    result_code          INTEGER NOT NULL DEFAULT -1,
+    result_desc          TEXT,
+    amount               NUMERIC(12, 2),
+    mpesa_receipt        VARCHAR(50),
+    phone                VARCHAR(20),
+    created_at           TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_mpesa_payments_checkout_id ON mpesa_payments (checkout_request_id);
+```
+
+**Column notes:**
+
+- `result_code = -1` is the sentinel value for a pending payment. The backend writes this at initiation time and the frontend filters it out when checking for an existing result.
+- `result_code = 0` means payment completed successfully.
+- Any other `result_code` (e.g. `1032` = cancelled, `1037` = timed out, `1` = insufficient funds) means the payment failed.
+- `mpesa_receipt` is populated only on success — it holds the M-Pesa receipt number shown to the customer.
+
+**Supabase Realtime** must be enabled on this table for the frontend's live payment status to work. In your Supabase dashboard: Database → Replication → `mpesa_payments` → enable for `UPDATE` events.
 
 ---
 
@@ -185,189 +285,102 @@ Create a `.env` file in the project root based on `.env.example`. The following 
 
 ### Sandbox testing
 
-1. Register on the [Safaricom Daraja portal](https://developer.safaricom.co.ke/) and create a test app.
-2. Set `MPESA_ENVIRONMENT=sandbox` in your `.env`.
-3. Use Safaricom's sandbox test credentials and phone numbers.
-4. Start the app with `vercel dev`.
-5. Navigate to `http://localhost:3000`, log in, and use the dashboard to initiate a test STK Push.
+1. Register on the [Safaricom Daraja portal](https://developer.safaricom.co.ke/) and create a sandbox app.
+2. Set `PRODUCTION_BASE_URL=https://sandbox.safaricom.co.ke` in your `.env`.
+3. Use Safaricom's sandbox test credentials:
+   - Shortcode: `174379`
+   - Passkey: `bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919`
+   - Test phone: `254708374149` (only this number works in sandbox)
+4. Your callback URL must be publicly accessible over HTTPS — use [ngrok](https://ngrok.com) or deploy to Vercel.
+5. Start the app and navigate to the payment form.
 
-### Initiating an STK Push
+### Making a payment
 
-1. Log in with your credentials.
-2. On the Dashboard, fill in the payment form: phone number, amount, and account reference.
-3. Submit — the backend calls Safaricom's STK Push endpoint and returns a `CheckoutRequestID`.
-4. The customer receives a PIN prompt on their phone.
-5. Safaricom POSTs the result to your callback URL; the status updates in the UI.
+1. Enter a Safaricom phone number (the form accepts `07XXXXXXXX` format).
+2. Enter an amount in KES (minimum 1).
+3. Click **Send payment**.
+4. The customer receives an M-Pesa PIN prompt on their phone.
+5. After the customer enters their PIN, Safaricom POSTs the result to your callback URL.
+6. The UI navigates to `/success` (showing receipt number, amount, and phone) or `/failure` (showing the reason).
+
+If no callback is received within 60 seconds, `waitForPayment()` times out and shows an error message.
 
 ---
 
-## API Documentation
+## API Reference
 
-All backend routes are Python serverless functions under `api/`. In production they are available at your Vercel deployment domain. In local dev they run via `vercel dev`.
+Both endpoints are Python files in `api/` and are served as Vercel serverless functions. In production they are available at your Vercel deployment domain.
 
-### Payments
+---
 
-All payment endpoints require `Authorization: Bearer <JWT>` in the request header.
+### `POST /api/pay` — Initiate STK Push
 
-#### `POST /api/pay` — STK Push
-
-Initiate a Lipa Na M-Pesa Online (STK Push) payment.
+Triggers a Lipa Na M-Pesa Online PIN prompt on the customer's phone.
 
 **Request body:**
+
 ```json
 {
-  "phone": "254712345678",
-  "amount": 100,
-  "account_ref": "INV001",
-  "description": "Payment for invoice"
+  "phone": "0712345678",
+  "amount": 100
 }
 ```
 
-**Response (200):**
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `phone` | string | yes | Any common Kenyan format — normalised to `2547XXXXXXXX` internally |
+| `amount` | number | yes | Whole number, minimum 1 (KES) |
+
+The `account_reference` is currently hardcoded to `"BOBTOROITICH"` and `transaction_description` to `"Payment"` in the backend. Update `lib/stkpush.py` to accept these from the request body if needed.
+
+**Response (200 — STK Push accepted):**
+
 ```json
 {
-  "MerchantRequestID": "...",
-  "CheckoutRequestID": "...",
-  "ResponseCode": "0",
-  "ResponseDescription": "Success. Request accepted for processing",
-  "CustomerMessage": "Success. Request accepted for processing"
+  "success": true,
+  "checkout_request_id": "ws_CO_...",
+  "merchant_request_id": "...",
+  "response_description": "Success. Request accepted for processing",
+  "customer_message": "Success. Request accepted for processing"
 }
 ```
 
-#### `POST /api/callbacks/stk` — STK Push Callback
+**Response (400 — validation error or Daraja rejection):**
 
-Receives Safaricom's asynchronous callback after an STK Push. This endpoint must be publicly accessible and registered with Safaricom.
-
-> This endpoint is called by Safaricom's servers, not the frontend.
-
----
-
-#### `POST /api/c2b/register` — Register C2B URLs
-
-Register confirmation and validation URLs with Safaricom.
-
-#### `POST /api/c2b/validate` — C2B Validation
-
-Called by Safaricom to validate an incoming C2B payment before confirmation.
-
-#### `POST /api/c2b/confirm` — C2B Confirmation
-
-Called by Safaricom to confirm a completed C2B payment.
-
----
-
-#### `POST /api/b2c` — Business to Customer
-
-Disburse funds from a business shortcode to a mobile number.
-
-**Request body:**
 ```json
 {
-  "phone": "254712345678",
-  "amount": 500,
-  "remarks": "Salary payment",
-  "occasion": "Monthly salary"
+  "success": false,
+  "error": "phone and amount are required"
 }
 ```
 
-#### `POST /api/b2b` — Business to Business
+**Response (500 — unexpected error):**
 
-Transfer funds between business shortcodes.
-
-#### `GET /api/status` — Transaction Status
-
-Query the status of a specific M-Pesa transaction.
-
-**Query params:** `?transaction_id=<M-Pesa transaction ID>`
-
-#### `GET /api/balance` — Account Balance
-
-Query the balance of the configured M-Pesa shortcode.
-
-#### `POST /api/reversal` — Transaction Reversal
-
-Reverse a completed M-Pesa transaction.
-
-**Request body:**
 ```json
 {
-  "transaction_id": "OEI2AK4Q16",
-  "amount": 100,
-  "remarks": "Duplicate payment reversal"
+  "success": false,
+  "error": "..."
 }
 ```
 
----
-
-## Project Structure
-
-```
-mpesa-app/
-│
-├── src/                          # React frontend
-│   ├── components/
-│   │   ├── Login.jsx             # Login form component
-│   │   ├── Dashboard.jsx         # Main dashboard layout
-│   │   ├── PaymentForm.jsx       # STK Push / payment initiation form
-│   │   ├── PaymentStatus.jsx     # Displays transaction result/status
-│   │   └── TransactionList.jsx   # History of past transactions
-│   ├── pages/
-│   │   ├── LoginPage.jsx         # Login route page wrapper
-│   │   └── DashboardPage.jsx     # Dashboard route page wrapper
-│   ├── services/
-│   │   ├── auth.js               # Auth API calls (login, logout)
-│   │   └── payment.js            # Payment API calls (STK Push, status, etc.)
-│   ├── context/
-│   │   └── AuthContext.jsx       # React Context for auth state
-│   ├── App.jsx                   # Root component, routing
-│   └── main.jsx                  # React entry point
-│
-├── api/                          # Python serverless functions (Vercel)
-│   ├── lib/
-│   │   ├── auth.py               # M-Pesa OAuth token helper (with Redis caching)
-│   │   └── helpers.py            # Shared HTTP response helpers
-│   ├── auth/
-│   │   ├── login.py              # POST /api/auth/login
-│   │   └── logout.py             # POST /api/auth/logout
-│   ├── pay.py                    # POST /api/pay (STK Push)
-│   ├── callbacks/
-│   │   └── stk.py                # POST /api/callbacks/stk (STK Push callback)
-│   ├── c2b/
-│   │   ├── register.py           # POST /api/c2b/register
-│   │   ├── validate.py           # POST /api/c2b/validate
-│   │   └── confirm.py            # POST /api/c2b/confirm
-│   ├── b2c.py                    # POST /api/b2c
-│   ├── b2b.py                    # POST /api/b2b
-│   ├── balance.py                # GET  /api/balance
-│   └── reversal.py               # POST /api/reversal
-│
-├── public/
-│   └── favicon.ico
-│
-├── index.html                    # Vite HTML entry point
-├── vite.config.js                # Vite config (dev proxy to /api)
-├── eslint.config.js              # ESLint configuration
-├── package.json                  # JS dependencies and scripts
-├── package-lock.json             # Lockfile (commit this)
-├── requirements.txt              # Python dependencies
-├── .env.example                  # Template for environment variables
-├── .gitignore
-├── CONTRIBUTING.md
-├── DOCUMENTATION.md              # Extended internal documentation
-├── LICENSE.md
-└── README.md
-```
-
-> **Note:** `vercel.json`, `venv/`, `node_modules/`, `dist/`, and `.env` are either auto-generated or excluded from version control per `.gitignore`.
+> The endpoint also handles `OPTIONS` (CORS preflight) and returns `Access-Control-Allow-Origin: *` on all responses.
 
 ---
 
-## Development
+### `POST /api/callback` — STK Push Callback
 
-### Available scripts
+Receives Safaricom's asynchronous result after the customer responds to the PIN prompt. This endpoint is called by Safaricom's servers, not the frontend. It must be publicly accessible over HTTPS.
+
+**Always returns HTTP 200** with `{"ResultCode": 0, "ResultDesc": "Accepted"}` regardless of processing outcome — if this endpoint returns anything other than 200, Safaricom will retry the callback repeatedly.
+
+The handler upserts into `mpesa_payments` using `ON CONFLICT (checkout_request_id) DO UPDATE`, with `COALESCE` ensuring the phone and amount saved at initiation are preserved if the callback omits them (e.g. on a cancelled payment).
+
+---
+
+## Available Scripts
 
 ```bash
-# Start the Vite frontend dev server (frontend only, no API)
+# Start the Vite frontend dev server (no Python API)
 npm run dev
 
 # Build the frontend for production
@@ -379,93 +392,65 @@ npm run preview
 # Run ESLint
 npm run lint
 
-# Full-stack local development (frontend + Python serverless functions)
+# Full-stack local development (frontend + Python API functions)
 vercel dev
 ```
-
-### Adding a new API endpoint
-
-1. Create a new `.py` file under `api/` (or a subdirectory).
-2. Export an HTTP handler function (see existing endpoints for the pattern).
-3. Import shared utilities from `api/lib/auth.py` and `api/lib/helpers.py`.
-4. Test locally with `vercel dev`.
-
-### Testing
-
-> ⚠️ **No automated test suite is currently present in this repository.** There are no unit tests, integration tests, or test configuration files. See [Known Issues / Limitations](#known-issues--limitations).
-
-For manual testing:
-- Use the Safaricom Sandbox environment and its provided test credentials.
-- Use tools like [Postman](https://www.postman.com/) or `curl` to call API endpoints directly.
 
 ---
 
 ## Deployment
 
-The project is designed for **zero-config deployment on Vercel**.
+The project is configured for deployment on Vercel. `vercel.json` sets the build command, output directory, and an SPA rewrite rule so that React Router routes (`/success`, `/failure`) are handled client-side.
 
 ### Steps
 
 1. Push the repository to GitHub.
 2. Import the project in the [Vercel dashboard](https://vercel.com/new).
 3. Vercel auto-detects the Vite frontend and the Python functions in `api/`.
-4. Add all environment variables from [Environment Variables](#environment-variables) in the Vercel project settings under **Settings → Environment Variables**.
-5. Deploy — Vercel handles building the frontend and deploying the Python functions.
+4. Add all environment variables from the [Environment Variables](#environment-variables) section in Vercel project settings under **Settings → Environment Variables**.
+5. Deploy.
 
-### Callback URL requirements
+### Callback URL
 
-Safaricom requires that callback/confirmation/validation URLs be:
+Set `PRODUCTION_CALLBACK_URL` to your Vercel deployment URL plus `/api/callback`:
+
+```
+https://your-project.vercel.app/api/callback
+```
+
+Safaricom requires callback URLs to be:
 - Publicly accessible (not `localhost`)
 - HTTPS only
-- Responding within a short timeout
-
-Set `MPESA_CALLBACK_URL` to your Vercel deployment URL, e.g.:
-
-```
-https://your-project.vercel.app/api/callbacks/stk
-```
-
-Register C2B URLs **once** by hitting `POST /api/c2b/register` after deployment.
+- Responding within a short timeout (always return 200 immediately)
+- Free of the words "mpesa", "safaricom", or similar — Safaricom's system may block such URLs
 
 ---
 
-## Security Notes
+## Known Limitations
 
-- **All secrets are environment variables.** The `.gitignore` excludes `.env`. Never hardcode credentials.
-- **Supabase service role key** grants full database access — treat it like a root password. Do not expose it to the frontend.
-- **JWT secret** must be a long, randomly generated string (e.g. `openssl rand -hex 32`). Rotating it invalidates all existing sessions.
-- **bcrypt** is used for password hashing (`bcrypt` library). Passwords are never stored in plaintext.
-- **M-Pesa B2C Security Credential** must be encrypted with Safaricom's public certificate before use. Refer to the Daraja documentation for the encryption process.
-- **Callback endpoints** (`/api/callbacks/stk`, `/api/c2b/validate`, `/api/c2b/confirm`) are publicly accessible by design (Safaricom calls them). Consider validating the source IP against Safaricom's known IP ranges in production.
-- **HTTPS is enforced** by Vercel in production. Never disable this.
-- Some files are explicitly excluded from the repository via `.gitignore` (`lib/basicstkpush.py`, `api/callbackserver.py`, `api/status.py`) — this may indicate local development scripts with hardcoded values; ensure these are never committed.
-
----
-
-## Known Issues / Limitations
-
-- **No automated tests.** There are no unit, integration, or end-to-end tests. This is a significant gap for a payment application — errors in credential handling or API response parsing could go undetected.
-- **No `vercel.json` in the repository.** The project structure references `vercel.json` in the README tree but the file was not present in the repository at the time of this writing. Vercel's auto-detection may work without it, but explicit configuration is recommended for production (routing rules, Python runtime version pinning).
-- **No `.env.example` file committed.** The project structure documents `.env.example` as safe to commit, but it was not present in the repository. New contributors cannot know which variables are needed without reading the code. Add this file.
-- **`api/status.py` is gitignored.** The transaction status endpoint is excluded from version control. This means the `/api/status` route will not work after a fresh clone.
-- **No React Router.** The project uses React 19 without a visible routing library in `package.json`. Navigation between Login and Dashboard pages may rely on conditional rendering in `App.jsx` rather than proper URL-based routing. Consider adding `react-router-dom` for bookmarkable URLs and browser-history support.
-- **No error boundary or global error handling** is apparent in the frontend dependencies.
-- **Single branch (`main`).** There is no `develop` or feature-branch workflow, and no branch protection rules are configured.
-- **No CI/CD pipeline.** There are no GitHub Actions workflows. Deployments go directly from `main` to Vercel with no automated quality gate.
+- **QR code not implemented.** The `Qrcode.jsx` component renders a card shell with a placeholder comment. No QR generation logic exists yet.
+- **No authentication.** There is no login, no JWT validation, and no user accounts. The payment form is fully public. `PyJWT` and `bcrypt` are in `requirements.txt` in anticipation of a future auth layer.
+- **Hardcoded production URL.** `src/components/Form.jsx` makes requests to the hardcoded Vercel deployment URL. Local development against `vercel dev` requires manually updating this to `http://localhost:3000/api/pay`.
+- **No sandbox/production toggle.** The Python backend connects to whichever Daraja URL is set in `PRODUCTION_BASE_URL`. There is no runtime switch — set the variable appropriately per environment.
+- **Account reference is hardcoded.** `lib/stkpush.py` uses `"BOBTOROITICH"` as the account reference. This should be made configurable.
+- **No automated tests.** There are no unit tests, integration tests, or test configuration files.
+- **No CI/CD pipeline.** There are no GitHub Actions workflows. Deployments go directly from `main` to Vercel.
+- **Single branch.** There is no `develop` or feature-branch workflow and no branch protection rules.
+- **`lib/helpers.py` is empty.** It exists as a stub for shared response helpers that have not been written yet.
 - **Non-commercial license restricts production use.** See [License](#license).
 
 ---
 
 ## Contributing
 
-This is a personal solo project and is **not currently open for code contributions**.
+This is a personal solo project and is not currently open for code contributions.
 
 You are welcome to:
-- **Report bugs** — open a GitHub Issue with a description of what you expected vs. what happened, including any error messages or screenshots.
+- **Report bugs** — open a GitHub Issue describing what you expected vs. what happened, including error messages or screenshots.
 - **Suggest features** — open a GitHub Issue describing your idea.
 - **Fork it** — fork the repository and build your own version, subject to the non-commercial license terms.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
 
 ---
 
