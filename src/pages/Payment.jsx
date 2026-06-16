@@ -10,7 +10,7 @@ export default function Payment(){
             <div className="payment-inner">
                 <Header />
                 <Form details={details} setDetails={setDetails}/>
-                <Qrcode />
+                <Qrcode amount={details.amount}/>
             </div>
         </div>
     )
