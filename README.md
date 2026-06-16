@@ -135,7 +135,6 @@ mpesa-app/
 ├── lib/                          # Shared Python utilities
 │   ├── accesstoken.py            # OAuth token fetch + Upstash Redis caching
 │   ├── stkpush.py                # STK Push request builder and sender
-│   ├── helpers.py                # (stub — reserved for shared response helpers)
 │   └── supabase.js               # Supabase JS client (used by frontend utils)
 │
 ├── utils/
