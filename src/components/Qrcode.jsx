@@ -12,10 +12,11 @@ export default function Qrcode({ amount }) {
     }
 
     let cancelled = false
+    setQr(null)        // ← clear the old QR immediately when amount changes
+    setError(null)
 
     const timer = setTimeout(() => {
       setLoading(true)
-      setError(null)
 
       fetch('https://mpesa-app-indol.vercel.app/api/qrcode', {
         method: 'POST',
