@@ -72,7 +72,6 @@ export default function Form({ details, setDetails }) {
   }
   return (
     <form className="form-card" onSubmit={handleSubmit}>
-      <div className="form-card-bar" />
       <div className="form-inner">
         <p className="form-heading">Payment details</p>
         <div className="field">
