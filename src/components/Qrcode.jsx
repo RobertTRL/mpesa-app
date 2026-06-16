@@ -30,7 +30,7 @@ export default function Qrcode({ amount }) {
         })
         .catch(e => { if (!cancelled) setError(e.message) })
         .finally(() => { if (!cancelled) setLoading(false) })
-    }, 3000)
+    }, 1200)
 
     return () => {
       clearTimeout(timer)
