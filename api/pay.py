@@ -13,7 +13,7 @@ from lib.stkpush import STKPush
 def get_db():
     return psycopg2.connect(os.getenv("DATABASE_URL"))
 
-
+# pay.py
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers.get('Content-Length', 0))))
