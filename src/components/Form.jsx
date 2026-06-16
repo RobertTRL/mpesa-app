@@ -2,10 +2,9 @@ import { useState, useId } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { waitForPayment } from '../../utils/waitForPayment'
 
-export default function Form() {
+export default function Form({ details, setDetails }) {
   const numberId = useId()
   const amountId = useId()
-  const [details, setDetails] = useState({ number: '', amount: '' })
   const [isNumberValid, setIsNumberValid] = useState(false)
   const [isAmountValid, setIsAmountValid] = useState(false)
   const [loading, setLoading] = useState(false)

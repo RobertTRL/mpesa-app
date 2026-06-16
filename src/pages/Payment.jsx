@@ -4,11 +4,12 @@ import Qrcode from "../components/Qrcode.jsx"
 import '../styles/payment.css'
 
 export default function Payment(){
+    const [details, setDetails] = useState({ number: '', amount: '' })
     return (
         <div className="payment-page">
             <div className="payment-inner">
                 <Header />
-                <Form />
+                <Form details={details} setDetails={setDetails}/>
                 <Qrcode />
             </div>
         </div>
