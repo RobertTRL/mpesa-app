@@ -1,6 +1,6 @@
 # M-Pesa Prompting App
 
-A focused, production-ready web application for triggering M-Pesa STK Push (Lipa Na M-Pesa) payments. Built with a React frontend and a Python serverless backend deployed on Vercel. The customer enters their phone number and an amount, receives a PIN prompt on their phone, and the UI updates in real time when Safaricom confirms the payment — no page refresh needed.
+A focused, production-ready web application for triggering M-Pesa STK Push (Lipa Na M-Pesa) payments and generating M-Pesa QR codes. Built with a React frontend and a Python serverless backend deployed on Vercel. The customer enters their phone number and an amount, receives a PIN prompt on their phone, and the UI updates in real time when Safaricom confirms the payment — no page refresh needed. Alternatively, customers can scan a dynamically generated QR code directly from the M-Pesa app.
 
 ---
 
@@ -27,9 +27,11 @@ A focused, production-ready web application for triggering M-Pesa STK Push (Lipa
 
 **What it does:** Presents a payment form where a user enters a Safaricom phone number and an amount. On submission the backend calls Safaricom's Daraja STK Push API, which sends a PIN prompt to the customer's phone. The frontend subscribes to the `mpesa_payments` table via Supabase Realtime and navigates to a success or failure screen the moment Safaricom's callback updates the database record — with no polling required.
 
-**Problem it solves:** Wires together the three moving parts of a live STK Push flow — token management, payment initiation, and asynchronous callback handling — into a deployable, end-to-end web app.
+Alongside the STK Push form, the app generates a live M-Pesa QR code for the entered amount. The QR is debounced — it regenerates 1.2 seconds after the user stops typing and clears immediately when the amount changes. Customers can scan the QR with their M-Pesa app as an alternative to the PIN prompt flow. QR payments are received via a registered C2B callback and saved to a dedicated `c2b_payments` table.
 
-**Intended users:** Developers and operators in Kenya who need a working M-Pesa STK Push integration they can deploy and extend.
+**Problem it solves:** Wires together the three moving parts of a live STK Push flow — token management, payment initiation, and asynchronous callback handling — into a deployable, end-to-end web app. It also integrates the Daraja QR Code API and C2B callback registration for a complete dual-payment-method experience.
+
+**Intended users:** Developers and operators in Kenya who need a working M-Pesa STK Push and QR Code integration they can deploy and extend.
 
 ---
 
@@ -41,7 +43,8 @@ A focused, production-ready web application for triggering M-Pesa STK Push (Lipa
 - **Redis token caching** — the M-Pesa OAuth access token is cached in Upstash Redis for 55 minutes, avoiding a round-trip to Safaricom on every request
 - **Pending record pattern** — a `result_code = -1` placeholder row is written at initiation time so the callback always has a row to `UPDATE` into, even when it arrives in milliseconds
 - **Phone number normalisation** — accepts `07XXXXXXXX`, `+2547XXXXXXXX`, or `2547XXXXXXXX` and normalises to the `2547XXXXXXXX` format the API requires
-- **QR code placeholder** — a QR card section is present in the UI and flagged in source as pending implementation
+- **Dynamic QR code generation** — calls the Daraja QR Code API to generate a scannable M-Pesa QR image for the entered amount; rendered as a base64 PNG inline in the browser
+- **Debounced QR fetching** — QR generation is triggered 3 seconds after the user stops typing, with immediate clearing when the amount changes to prevent stale codes from being scanned
 
 ---
 
