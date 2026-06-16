@@ -109,7 +109,7 @@ mpesa-app/
 │   ├── components/
 │   │   ├── Form.jsx              # Payment form — phone, amount, submit
 │   │   ├── Header.jsx            # Page header / title
-│   │   └── Qrcode.jsx            # QR code card (pending implementation)
+│   │   └── Qrcode.jsx            # QR code card (generates a QR code that is scanned using the M-Pesa App)
 │   │
 │   ├── pages/
 │   │   ├── App.jsx               # Root component — React Router routes
