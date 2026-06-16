@@ -115,8 +115,7 @@ mpesa-app/
 │   │   ├── App.jsx               # Root component — React Router routes
 │   │   ├── Payment.jsx           # Main payment page (Form + Header + QR)
 │   │   ├── Success.jsx           # Shown after confirmed payment
-│   │   ├── Failure.jsx           # Shown after cancelled/failed payment
-│   │   └── Loading.jsx           # (currently unused)
+│   │   └── Failure.jsx           # Shown after cancelled/failed payment
 │   │
 │   ├── styles/
 │   │   ├── index.css
