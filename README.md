@@ -429,7 +429,6 @@ Safaricom requires callback URLs to be:
 
 ## Known Limitations
 
-- **QR code not implemented.** The `Qrcode.jsx` component renders a card shell with a placeholder comment. No QR generation logic exists yet.
 - **No authentication.** There is no login, no JWT validation, and no user accounts. The payment form is fully public. `PyJWT` and `bcrypt` are in `requirements.txt` in anticipation of a future auth layer.
 - **Hardcoded production URL.** `src/components/Form.jsx` makes requests to the hardcoded Vercel deployment URL. Local development against `vercel dev` requires manually updating this to `http://localhost:3000/api/pay`.
 - **No sandbox/production toggle.** The Python backend connects to whichever Daraja URL is set in `PRODUCTION_BASE_URL`. There is no runtime switch — set the variable appropriately per environment.
